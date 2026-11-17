@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gold Trader – XAU/USD</title>
+<style>
+:root{--bg:#f6f4ee;--card:#fff;--tx:#1c1a14;--mu:#7a7566;--bd:#e4e0d3;--up:#0a8f5a;--dn:#d33a3a;--gold:#b8860b;--ac:#b8860b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14120d;--card:#1e1b14;--tx:#f1ecdd;--mu:#9a947f;--bd:#332f23;--up:#2fd08b;--dn:#ff6b6b;--gold:#e6b422;--ac:#e6b422}}
+:root[data-theme="dark"]{--bg:#14120d;--card:#1e1b14;--tx:#f1ecdd;--mu:#9a947f;--bd:#332f23;--up:#2fd08b;--dn:#ff6b6b;--gold:#e6b422;--ac:#e6b422}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px}
+h1{font-size:15px;margin:0;color:var(--mu);font-weight:600;letter-spacing:.04em}
+.price{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.chg{font-variant-numeric:tabular-nums;font-weight:600}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.mu{color:var(--mu);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.grid div{background:var(--bg);border-radius:10px;padding:8px 10px}
+.grid b{display:block;font-variant-numeric:tabular-nums}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+button,select,input{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:7px 11px}
+button{cursor:pointer}
+button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+canvas{width:100%;height:340px;display:block}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row input{flex:1;min-width:110px}
+.al{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)}
+.al:last-child{border:0}
+.tag{font-size:12px;padding:2px 8px;border-radius:20px;background:var(--bg);color:var(--mu)}
+#toast{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top,0px));max-width:420px;margin:auto;background:var(--ac);color:#fff;padding:14px;border-radius:12px;font-weight:600;display:none;z-index:9;box-shadow:0 8px 24px #0004}
+.note{font-size:12px;color:var(--mu);margin-top:6px}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.mq{overflow:hidden;white-space:nowrap;margin-bottom:12px;padding:7px 0;border:1px solid var(--bd);border-radius:10px;background:var(--card)}
+.mq span{display:inline-block;padding-left:100%;animation:mq 14s linear infinite;font-weight:700;color:var(--gold)}
+@keyframes mq{to{transform:translateX(-100%)}}.tabs button{flex:1;font-weight:600;padding:10px}
+.nr{display:grid;grid-template-columns:1fr 84px 84px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)}
+.nr input,.nr select{width:100%;padding:7px 8px}.nr .sp{grid-column:2/4}
+.vd{margin-top:10px;padding:11px;border-radius:10px;background:var(--bg);border:1px solid var(--bd)}
+label.mu{flex:1;min-width:110px}label.mu input{width:100%;margin-top:3px}
+details{margin-top:8px}ol.rl{padding-left:20px;margin:8px 0 0}ol.rl li{margin-bottom:5px}
+#alarm{position:fixed;inset:0;background:rgba(150,18,18,.97);color:#fff;z-index:99;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+#alarm .bell{font-size:88px;animation:sh .45s infinite}
+@keyframes sh{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(16deg)}}
+#alarm button{font-size:20px;padding:15px 34px;font-weight:800;background:#fff;color:#961212;border:0}
+@media(max-width:560px){.grid{grid-template-columns:repeat(2,1fr)}.price{font-size:34px}canvas{height:280px}}
+</style>
+</head>
+<body>
+<div id="alarm"><div class="bell">🔔</div><div style="font-size:26px;font-weight:800">CẢNH BÁO GIÁ VÀNG!</div><div id="amsg" style="font-size:18px"></div><div style="opacity:.9">Chuông còn <b id="acd">2:00</b></div><button id="astop">🔕 TẮT CHUÔNG</button></div>
+<div id="toast"></div>
+<div class="wrap">
+ <div class="tabs"><button data-pg="1" class="on">📈 Thị trường</button><button data-pg="2">📘 Tài liệu &amp; NFP</button></div>
+ <div class="mq"><span>✍️ Tác giả: Nguyễn Văn Hảo – 0913294532</span></div>
+ <div id="p1">
+ <div class="card">
+  <div class="top">
+   <div><h1>🪙 VÀNG THẾ GIỚI · XAU/USD</h1>
+    <div class="price" id="px">—</div>
+    <div class="chg" id="chg">—</div></div>
+   <div style="text-align:right"><span class="tag" id="st">● Mô phỏng</span>
+    <div class="mu" id="clock" style="margin-top:6px"></div><div class="tag" id="bias" style="display:none;margin-top:6px"></div></div>
+  </div>
+  <div class="grid">
+   <div><span class="mu">Mua (Bid)</span><b id="bid">—</b></div>
+   <div><span class="mu">Bán (Ask)</span><b id="ask">—</b></div>
+   <div><span class="mu">Cao / Thấp</span><b id="hl">—</b></div>
+   <div><span class="mu" id="unitL">Giá / gram</span><b id="gram">—</b></div>
+  </div>
+ </div>
+
+ <div class="card">
+  <div class="bar">
+   <button data-tf="5" class="on">5s</button><button data-tf="15">15s</button><button data-tf="60">1m</button><button data-tf="300">5m</button>
+   <span style="flex:1"></span>
+   <button id="ty">Nến</button>
+   <button id="pause">⏸ Tạm dừng</button>
+  </div>
+  <canvas id="cv"></canvas>
+ </div>
+
+ <div class="card">
+  <b>🔔 Cảnh báo giá</b>
+  <div class="row" style="margin-top:8px">
+   <select id="dir"><option value="above">Giá ≥</option><option value="below">Giá ≤</option></select>
+   <input id="tp" type="number" step="0.01" inputmode="decimal" placeholder="Mức giá (USD/oz)">
+   <button class="p" id="add">Thêm</button>
+  </div>
+  <div class="row" style="margin-top:8px"><button id="testb">🔊 Thử chuông (6 giây)</button></div>
+  <div class="note">Khi giá chạm mức cảnh báo, chuông reo to khoảng 2 phút cho đến khi bạn bấm “Tắt chuông”. Cần để trang mở, bật âm lượng và chạm vào trang ít nhất một lần (trình duyệt chặn âm thanh tự phát).</div>
+  <div id="als" style="margin-top:6px"></div>
+ </div>
+
+ <div class="card">
+  <b>⚙️ Đồng bộ giá thực</b>
+  <div class="row" style="margin-top:8px">
+   <input id="ref" type="number" step="0.01" inputmode="decimal" placeholder="Nhập giá XAU/USD hiện tại">
+   <button id="sync">Đặt giá gốc</button>
+  </div>
+  <div class="note">Khi mở trên web (GitHub Pages…), ứng dụng tự lấy giá thật từ nhiều nguồn dự phòng (gold-api.com → PAXG/Binance → PAXG/CoinGecko; PAXG là token bám giá vàng nên chỉ xấp xỉ giá spot). Nhãn ở góc trên cho biết đang dùng nguồn nào; nếu mọi nguồn đều lỗi, ứng dụng quay về giá <b>mô phỏng</b>. Ô này chỉ có tác dụng ở chế độ mô phỏng. Không phải lời khuyên đầu tư.</div>
+ </div>
+ </div>
+ <div id="p2" style="display:none">
+  <div class="card"><b>📘 Phân tích tin theo tài liệu “Nhật ký Trade”</b>
+   <div class="mu" style="margin-top:6px">Nhập số liệu <i>Thực tế</i> và <i>Dự báo</i>; ứng dụng áp dụng các quy tắc trong tài liệu để suy ra chiều tác động lên Vàng. Với NFP, tài liệu nhấn mạnh phải xét đủ cả 3 yếu tố: việc làm phi nông nghiệp, thu nhập trung bình theo giờ và tỷ lệ thất nghiệp. Đây là quy tắc kinh nghiệm, thị trường có thể phản ứng khác (chính tài liệu cũng nêu ngoại lệ), nên hãy chờ giá xác nhận.</div>
+   <div id="nxt" class="mu" style="margin-top:8px"></div></div>
+  <div class="card"><b>🗓️ Lịch kinh tế quan trọng ★★★ (giờ Việt Nam, GMT+7)</b>
+   <div class="mu" style="margin-top:4px">Chỉ liệt kê tin tác động mạnh tới Vàng/USD. Ngày giờ đối chiếu lịch BLS/BEA/Fed; mức 3 sao là đánh giá theo mức độ tác động thường thấy.</div>
+   <label class="mu" style="display:block;margin:8px 0"><input type="checkbox" id="rem"> ⏰ Chuông nhắc trước tin 10 phút (khi đang mở trang)</label>
+   <div id="cal"></div></div>
+  <div id="gs"></div>
+  <div class="card"><b>🧭 Tổng hợp xu hướng theo tin</b>
+   <div class="vd" id="v_all"></div>
+   <div class="row" style="margin-top:8px"><button id="nauto" class="p">↻ Nạp dữ liệu tự động</button><button id="nclr">Xoá tất cả</button></div>
+   <div class="note">Mỗi yếu tố được tính ngang nhau (tài liệu không đưa ra trọng số). Chỉ mang tính tham khảo, không phải lời khuyên đầu tư.</div></div>
+  <div class="card"><b>🛡️ Quản lý vốn – nguyên tắc 2%</b>
+   <div class="row" style="margin-top:8px"><label class="mu">Vốn (USD)<input id="cap" value="1800" inputmode="decimal"></label><label class="mu">Rủi ro (%)<input id="rk" value="2" inputmode="decimal"></label><label class="mu">Stop loss (pip)<input id="slp" value="50" inputmode="decimal"></label></div>
+   <div class="vd" id="lot"></div>
+   <div class="note">SL theo tài liệu: scalping 5–20 pip, trong ngày 20–50 pip, swing 50–150 pip; đặt SL sau hỗ trợ/kháng cự gần nhất. Quy ước 1 pip vàng = 0,1 USD giá; lot = rủi ro ÷ (SL pip × 10 USD) cho kết quả khớp ví dụ trong tài liệu (vốn 1.800$, SL 50 pip → 0,072 lot). Hãy kiểm tra thông số hợp đồng của broker.</div></div>
+  <div class="card"><b>📝 Kinh nghiệm trade (Chương II)</b>
+   <details><summary class="mu">Xem 16 nguyên tắc</summary><ol class="rl" id="rules"></ol></details></div>
+ </div>
+</div>
+
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var live={on:false,p:0,fail:0,i:0,busy:false};
+var S={base:4450,alerts:[],tf:5,type:'candle',paused:false};
+try{var j=JSON.parse(localStorage.getItem('goldapp')||'null');if(j){S.base=j.base||S.base;S.alerts=j.alerts||[]}}catch(e){}
+function save(){try{localStorage.setItem('goldapp',JSON.stringify({base:S.base,alerts:S.alerts}))}catch(e){}}
+var price=S.base,open24=S.base,hi=S.base,lo=S.base,candles=[],ctx,audio;
+function fmt(n,d){return Number(n).toLocaleString('en-US',{minimumFractionDigits:d==null?2:d,maximumFractionDigits:d==null?2:d})}
+function step(p){return p+(Math.random()-.5)*1.4+(S.base-p)*0.004}
+function seed(){
+ candles=[];if(live.on)return;var n=90,p=price,arr=[];
+ for(var i=0;i<n;i++){arr.unshift(p);p=p-((Math.random()-.5)*1.4*Math.sqrt(S.tf)+(S.base-p)*-0.004)}
+ var t=Math.floor(Date.now()/1000/S.tf)*S.tf-n*S.tf,pv=arr[0];
+ for(i=0;i<n;i++){var c=arr[i],h=Math.max(pv,c)+Math.random()*.8,l=Math.min(pv,c)-Math.random()*.8;candles.push({t:t+i*S.tf,o:pv,h:h,l:l,c:c});pv=c}
+}
+function tick(){
+ if(S.paused)return;
+ var prev=price;price=Math.max(1,live.on?live.p:step(price));
+ hi=Math.max(hi,price);lo=Math.min(lo,price);
+ var t=Math.floor(Date.now()/1000/S.tf)*S.tf,c=candles[candles.length-1];
+ if(!c||c.t<t){candles.push({t:t,o:price,h:price,l:price,c:price});if(candles.length>240)candles.shift()}
+ else{c.c=price;c.h=Math.max(c.h,price);c.l=Math.min(c.l,price)}
+ checkAlerts(prev,price);ui();draw();
+}
+function ui(){
+ var d=price-open24,pc=d/open24*100,cl=d>=0?'up':'dn';
+ $('px').textContent='$'+fmt(price);$('px').className='price '+cl;
+ $('chg').className='chg '+cl;$('chg').textContent=(d>=0?'▲ +':'▼ ')+fmt(d)+' ('+(d>=0?'+':'')+fmt(pc)+'%)';
+ $('bid').textContent=fmt(price-.15);$('ask').textContent=fmt(price+.15);
+ $('hl').textContent=fmt(hi,1)+' / '+fmt(lo,1);
+ $('gram').textContent='$'+fmt(price/31.1035);
+ $('clock').textContent=new Date().toLocaleTimeString('vi-VN');
+ document.title=(S.paused?'⏸ ':'')+'XAU '+fmt(price)+' · Gold Trader';
+}
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function draw(){
+ var cv=$('cv'),r=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+ if(!w||!candles.length)return;if(cv.width!==w*r){cv.width=w*r;cv.height=h*r}
+ ctx=cv.getContext('2d');ctx.setTransform(r,0,0,r,0,0);ctx.clearRect(0,0,w,h);
+ var N=Math.min(candles.length,w<500?50:80),data=candles.slice(-N),pad=62,bt=14,bb=22,cw=(w-pad)/N;
+ var mn=1e9,mx=-1e9;data.forEach(function(c){mn=Math.min(mn,c.l);mx=Math.max(mx,c.h)});
+ S.alerts.forEach(function(a){if(!a.done&&a.price>mn-8&&a.price<mx+8){mn=Math.min(mn,a.price);mx=Math.max(mx,a.price)}});
+ var sp=(mx-mn)||1;mn-=sp*.06;mx+=sp*.06;
+ var Y=function(v){return bt+(mx-v)/(mx-mn)*(h-bt-bb)};
+ var bd=css('--bd'),mu=css('--mu'),up=css('--up'),dn=css('--dn'),gd=css('--gold');
+ ctx.font='11px system-ui';ctx.textAlign='left';
+ for(var i=0;i<=5;i++){var v=mn+(mx-mn)*i/5,y=Y(v);ctx.strokeStyle=bd;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w-pad,y);ctx.stroke();ctx.fillStyle=mu;ctx.fillText(fmt(v),w-pad+6,y+4)}
+ if(S.type==='line'){ctx.strokeStyle=gd;ctx.lineWidth=2;ctx.beginPath();data.forEach(function(c,i){var x=i*cw+cw/2,y=Y(c.c);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+  ctx.lineTo((N-1)*cw+cw/2,h-bb);ctx.lineTo(cw/2,h-bb);ctx.globalAlpha=.12;ctx.fillStyle=gd;ctx.fill();ctx.globalAlpha=1}
+ else data.forEach(function(c,i){var x=i*cw+cw/2,col=c.c>=c.o?up:dn;ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x,Y(c.h));ctx.lineTo(x,Y(c.l));ctx.stroke();
+  var y1=Y(Math.max(c.o,c.c)),y2=Y(Math.min(c.o,c.c));ctx.fillRect(x-cw*.32,y1,cw*.64,Math.max(1,y2-y1))});
+ S.alerts.forEach(function(a){if(a.done)return;var y=Y(a.price);if(y<0||y>h)return;ctx.setLineDash([5,4]);ctx.strokeStyle=gd;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w-pad,y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=gd;ctx.fillText('🔔 '+fmt(a.price),4,y-3)});
+ var y=Y(price),col=price>=data[0].o?up:dn;ctx.strokeStyle=col;ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w-pad,y);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle=col;ctx.fillRect(w-pad,y-9,pad,18);ctx.fillStyle='#fff';ctx.fillText(fmt(price),w-pad+6,y+4);
+ ctx.fillStyle=mu;ctx.textAlign='center';[0,Math.floor(N/2),N-1].forEach(function(i){ctx.fillText(new Date(data[i].t*1000).toLocaleTimeString('vi-VN'),Math.min(Math.max(i*cw+cw/2,34),w-pad-34),h-6)});
+}
+function beep(){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();[880,1175,880].forEach(function(f,i){var o=audio.createOscillator(),g=audio.createGain();o.frequency.value=f;o.connect(g);g.connect(audio.destination);var t=audio.currentTime+i*.18;g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+.16);o.start(t);o.stop(t+.17)})}catch(e){}}
+function toast(m){var t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(function(){t.style.display='none'},7000)}
+function checkAlerts(a,b){
+ S.alerts.forEach(function(x){if(x.done)return;
+  if((x.dir==='above'&&b>=x.price)||(x.dir==='below'&&b<=x.price)){x.done=true;x.at=new Date().toLocaleTimeString('vi-VN');startAlarm(120,'XAU/USD '+(x.dir==='above'?'≥ ':'≤ ')+fmt(x.price)+' — giá hiện tại '+fmt(b));toast('🔔 XAU/USD '+(x.dir==='above'?'đã chạm/vượt ':'đã chạm/xuống dưới ')+fmt(x.price)+' (giá hiện tại '+fmt(b)+')');save();renderAl()}})
+}
+function renderAl(){
+ var h='';S.alerts.forEach(function(a,i){h+='<div class="al"><div>'+(a.dir==='above'?'Giá ≥ ':'Giá ≤ ')+'<b>'+fmt(a.price)+'</b> '+(a.done?'<span class="tag">✅ đã kích hoạt '+a.at+'</span>':'<span class="tag">đang theo dõi</span>')+'</div><button data-d="'+i+'">Xoá</button></div>'});
+ $('als').innerHTML=h||'<div class="mu">Chưa có cảnh báo nào.</div>';
+}
+$('add').onclick=function(){var v=parseFloat($('tp').value);if(!(v>0)){toast('Nhập mức giá hợp lệ');return}
+ S.alerts.push({dir:$('dir').value,price:v,done:false});$('tp').value='';save();renderAl();draw();try{audio=audio||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}};
+$('als').onclick=function(e){var d=e.target.getAttribute('data-d');if(d!==null){S.alerts.splice(+d,1);save();renderAl();draw()}};
+$('sync').onclick=function(){var v=parseFloat($('ref').value);if(!(v>0))return;S.base=price=open24=hi=lo=v;$('ref').value='';save();seed();ui();draw();toast('Đã đặt giá gốc '+fmt(v))};
+$('pause').onclick=function(){S.paused=!S.paused;this.textContent=S.paused?'▶ Tiếp tục':'⏸ Tạm dừng';ui()};
+$('ty').onclick=function(){S.type=S.type==='candle'?'line':'candle';this.textContent=S.type==='candle'?'Nến':'Đường';draw()};
+document.querySelectorAll('[data-tf]').forEach(function(b){b.onclick=function(){S.tf=+b.getAttribute('data-tf');document.querySelectorAll('[data-tf]').forEach(function(x){x.classList.toggle('on',x===b)});seed();draw()}});
+window.addEventListener('resize',draw);
+
+/* ===== Chuông 2 phút (lên lịch trước bằng đồng hồ âm thanh, vẫn kêu khi tab bị giảm tốc) ===== */
+var AC,alarmG,alarmT,alarmEnd=0;
+function ac(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}return AC}
+document.addEventListener('pointerdown',function(){ac()},{once:true});
+function ring(sec){var a=ac();if(!a)return null;var m=a.createGain(),c=a.createDynamicsCompressor();m.connect(c);c.connect(a.destination);var t0=a.currentTime+.05;
+ for(var q=0;q<sec;q+=2){[0,.35,.7].forEach(function(o,k){var f=k===1?1175:880;
+  [[1,.55],[2.76,.28],[5.4,.14]].forEach(function(p){var os=a.createOscillator(),g=a.createGain(),t=t0+q+o;
+   os.frequency.value=f*p[0];os.connect(g);g.connect(m);
+   g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(p[1],t+.01);g.gain.exponentialRampToValueAtTime(.001,t+1.1);os.start(t);os.stop(t+1.2)})})}
+ return m}
+function stopAlarm(){clearInterval(alarmT);alarmT=null;if(alarmG){try{alarmG.gain.value=0;alarmG.disconnect()}catch(e){}alarmG=null}$('alarm').style.display='none';try{navigator.vibrate&&navigator.vibrate(0)}catch(e){}}
+function startAlarm(sec,msg){stopAlarm();alarmG=ring(sec);alarmEnd=Date.now()+sec*1000;$('amsg').textContent=msg||'';$('alarm').style.display='flex';var n=0;
+ var f=function(){var l=Math.ceil((alarmEnd-Date.now())/1000);if(l<=0){stopAlarm();return}
+  $('acd').textContent=Math.floor(l/60)+':'+('0'+l%60).slice(-2);
+  if(n++%2===0){try{navigator.vibrate&&navigator.vibrate([500,200,500])}catch(e){}}};
+ f();alarmT=setInterval(f,1000)}
+$('astop').onclick=stopAlarm;
+$('testb').onclick=function(){startAlarm(6,'Chuông thử nghiệm')};
+
+/* ===== Tabs ===== */
+document.querySelectorAll('[data-pg]').forEach(function(b){b.onclick=function(){var p=b.getAttribute('data-pg');$('p1').style.display=p==='1'?'':'none';$('p2').style.display=p==='2'?'':'none';document.querySelectorAll('[data-pg]').forEach(function(x){x.classList.toggle('on',x===b)});if(p==='1')draw()}});
+
+/* ===== Phân tích tin theo tài liệu ===== */
+var G=[
+{id:'nfp',s:'Nguồn: BLS công bố 06/11/2026 (tháng 10); dự báo theo FactSet.',t:'📊 Bảng lương phi nông nghiệp (NFP) – Thứ Sáu đầu tiên của tháng',r:[['Thay đổi việc làm phi nông nghiệp (nghìn)',-1],['Thu nhập TB theo giờ (% m/m)',-1],['Tỷ lệ thất nghiệp (%)',1]]},
+{id:'oth',s:'CPI m/m: BLS 10/11 (dự báo Dow Jones) · ISM sản xuất: 02/11 · GDP Q3: 29/10 · Đơn xin trợ cấp: 12/11. Chưa có số liệu Hàng hóa lâu bền lõi.',t:'📰 Số liệu kinh tế khác',r:[['CPI',-1],['PMI – ISM',-1],['GDP',-1],['Hàng hóa lâu bền lõi',-1],['Đơn xin trợ cấp thất nghiệp',1]]},
+{id:'mk',s:'Tổng hợp từ tin tuần 16/11/2026: Fed đã tăng lãi suất và thị trường định giá tăng tiếp tháng 12, USD ở mức cao nhất năm, lợi suất tăng, FOMC nghiêng diều hâu.',t:'🌐 Yếu tố thị trường & chính sách',st:1,r:[['Lãi suất / quyết định của NHTW',-1,'Tăng','Giảm'],['Chỉ số USD (DXY)',-1,'Tăng','Giảm'],['Lợi suất trái phiếu Mỹ',-1,'Tăng','Giảm'],['Lạm phát',1,'Tăng','Giảm'],['Chứng khoán',-1,'Tăng','Giảm'],['Giá dầu',1,'Tăng','Giảm'],['Khủng hoảng kinh tế/chính trị',1,'Tăng','Giảm'],['Tuyên bố FOMC',-1,'Diều hâu','Bồ câu'],['Chính sách tiền tệ',-1,'Thắt chặt (taper)','Nới lỏng (QE)'],['Quỹ ETF vàng',1,'Mua ròng','Bán ròng'],['Dự trữ vàng của NHTW',1,'Tăng mua','Giảm mua']]}];
+function num(id){var v=$(id).value.replace(',','.').trim();return v===''?NaN:parseFloat(v)}
+var LIVE={asof:'cập nhật 17/11/2026'};
+var h='';
+G.forEach(function(g){h+='<div class="card"><b>'+g.t+'</b> <span class="tag">⚡ tự động · '+LIVE.asof+'</span><div class="mu" style="margin-top:4px">'+g.s+'</div>';
+ if(!g.st)h+='<div class="nr mu"><div></div><div>Thực tế</div><div>Dự báo</div></div>';
+ g.r.forEach(function(r,i){var k=g.id+i,up=r[1]<0?'giảm':'tăng',dn=r[1]<0?'tăng':'giảm';
+  h+='<div class="nr"><div>'+r[0]+'<div class="mu">'+(g.st?r[2]+' → Vàng '+up+' · '+r[3]+' → Vàng '+dn:'Thực tế > dự báo → Vàng '+up)+'</div><div id="rb_'+k+'"></div></div>';
+  h+=g.st?'<select class="sp" id="s_'+k+'"><option value="">—</option><option value="u">'+r[2]+'</option><option value="d">'+r[3]+'</option></select>':'<input type="text" inputmode="decimal" id="a_'+k+'"><input type="text" inputmode="decimal" id="f_'+k+'">';
+  h+='</div>'});
+ h+='<div class="vd" id="v_'+g.id+'"></div>'+(g.id==='nfp'?'<div class="row" style="margin-top:8px"><button id="nex">Điền ví dụ minh hoạ (giống ví dụ trong tài liệu)</button></div>':'')+'</div>'});
+$('gs').innerHTML=h;
+function vd(c,n,all){
+ if(!c.k)return '<span class="mu">Nhập số liệu để xem phân tích.</span>';
+ var m=c.u>0&&c.d>0,dir=c.u>c.d?1:c.d>c.u?-1:0,mx=Math.max(c.u,c.d),t,cl,d;
+ if(dir===0){cl='mu';if(m){t='CÂN BẰNG – TÍN HIỆU TRÁI CHIỀU';d='Chưa xác định được xu hướng → theo tài liệu: tránh giao dịch, chờ giá xác nhận.'}else{t='TRUNG LẬP';d='Số liệu đều đúng dự báo → chưa có xu hướng từ tin.'}}
+ else{cl=dir>0?'up':'dn';var w=dir>0?'TĂNG':'GIẢM';
+  if(m){t='VÀNG NGHIÊNG '+w+' (tín hiệu lẫn lộn)';d=c.u+' yếu tố ủng hộ tăng so với '+c.d+' ủng hộ giảm. Cần chờ giá phản ứng và xác nhận xu hướng trước khi vào lệnh.'}
+  else if(n&&mx===n){t='VÀNG '+w+' MẠNH';d='Cả '+n+' yếu tố cùng chiều. Chỉ vào lệnh thuận xu hướng và luôn đặt Stop loss.'}
+  else{t='VÀNG NGHIÊNG '+w;d=mx+'/'+c.k+' yếu tố đã nhập cùng chiều'+(n&&c.k<n?' (mới nhập '+c.k+'/'+n+', nên nhập đủ số liệu)':'')+'.'}}
+ return '<b class="'+cl+'" style="font-size:16px">'+t+'</b><div class="mu" style="margin-top:4px">'+d+'</div>'}
+function calc(){var tot={u:0,d:0,k:0};
+ G.forEach(function(g){var c={u:0,d:0,k:0};
+  g.r.forEach(function(r,i){var k=g.id+i,v=null;
+   if(g.st){var sv=$('s_'+k).value;if(sv)v=(sv==='u'?1:-1)*r[1]}
+   else{var a=num('a_'+k),f=num('f_'+k);if(!isNaN(a)&&!isNaN(f)){var df=a-f;v=Math.abs(df)<1e-9?0:(df*r[1]>0?1:-1)}}
+   $('rb_'+k).innerHTML=v===null?'':v>0?'<span class="up">Vàng ▲ tăng</span>':v<0?'<span class="dn">Vàng ▼ giảm</span>':'<span class="mu">Đúng dự báo – trung lập</span>';
+   if(v!==null){c.k++;if(v>0)c.u++;if(v<0)c.d++}});
+  tot.u+=c.u;tot.d+=c.d;tot.k+=c.k;$('v_'+g.id).innerHTML=vd(c,g.r.length,false)});
+ $('v_all').innerHTML=vd(tot,0,true);
+ var b=$('bias');if(tot.k){b.style.display='';b.innerHTML='Tin: '+(tot.u>tot.d?'<span class="up">Vàng nghiêng tăng</span>':tot.d>tot.u?'<span class="dn">Vàng nghiêng giảm</span>':'Trung lập')+' ('+tot.u+'▲/'+tot.d+'▼)'}else b.style.display='none'}
+$('gs').addEventListener('input',calc);$('gs').addEventListener('change',calc);
+$('nex').onclick=function(){[250,0.2,4.8].forEach(function(v,i){$('a_nfp'+i).value=v});[200,0.4,4.7].forEach(function(v,i){$('f_nfp'+i).value=v});calc()};
+$('nclr').onclick=function(){$('gs').querySelectorAll('input').forEach(function(x){x.value=''});$('gs').querySelectorAll('select').forEach(function(x){x.value=''});calc()};
+(function(){var n=new Date(),t=new Date(n.getFullYear(),n.getMonth(),n.getDate()),d;
+ for(var k=0;k<3;k++){d=new Date(n.getFullYear(),n.getMonth()+k,1);while(d.getDay()!==5)d.setDate(d.getDate()+1);if(d>=t)break}
+ $('nxt').innerHTML='🗓️ Kỳ NFP tiếp theo (Thứ Sáu đầu tháng): <b>'+d.toLocaleDateString('vi-VN',{weekday:'long',day:'numeric',month:'numeric',year:'numeric'})+'</b> – thường công bố lúc 19:30 hoặc 20:30 (giờ VN, tuỳ mùa giờ Mỹ). Hãy đối chiếu lịch kinh tế chính thức vì ngày có thể thay đổi.'})();
+function lotc(){var c=num('cap'),p=num('rk'),sl=num('slp');if(!(c>0&&p>0&&sl>0)){$('lot').textContent='Nhập đủ vốn, % rủi ro và SL.';return}
+ var rs=c*p/100,l=rs/(sl*10);$('lot').innerHTML='Rủi ro tối đa: <b>$'+fmt(rs)+'</b> · Khối lượng: <b>'+l.toFixed(3)+' lot</b> (≈ $'+fmt(l*10)+' mỗi pip)'}
+['cap','rk','slp'].forEach(function(i){$(i).oninput=lotc});lotc();
+$('rules').innerHTML=['Không tham lam trong trade.','Không vào quá nhiều lệnh, đuổi lệnh, lệnh gần nhau.','Không trade giờ nhạy cảm, nhất là khi chưa xác định xu hướng.','Tích tiểu thành đại.','Buổi tối có nhiều tin quan trọng thì hạn chế giao dịch từ chiều để tránh mắc lệnh.','Không giao dịch khối lượng lớn.','Nhiều sự kiện gần nhau thì xác định riêng từng sự kiện, chốt sớm.','Khối lượng không quá 10% tài khoản; sai thì chấp nhận thua; không nhồi lệnh khi sai hướng; không trade ngược xu hướng.','Sideway: mua đáy, bán đỉnh từ lần chạm thứ 3; không đánh khi test lần 4.','Breakout: khoảng 80% có pullback test lại vùng cũ, là cơ hội buy/sell limit.','Luôn đặt Stop loss.','Vùng vào lệnh là cản/giá được test nhiều lần, ưu tiên khung H4 trở lên.','Giữ đầu lạnh; thắng to hôm trước thì nghỉ hôm sau; rút tiền khi có lời.','Biết đủ: đặt KPI ngày, tuần, tháng.','Chọn 1–3 mã để nghiên cứu kỹ.','Rủi ro tối đa 2% vốn cho mỗi giao dịch.'].map(function(x){return '<li>'+x+'</li>'}).join('');
+calc();
+
+/* ===== Dữ liệu tự động (ảnh chụp do Claude tra cứu ngày 17/11/2026) & lịch kinh tế ===== */
+LIVE={asof:'cập nhật 17/11/2026',
+ v:{nfp0:[165,65],nfp1:[0.4,0.3],nfp2:[4.1,4.2],oth0:[0.4,0.3],oth1:[55.5,54.6],oth2:[3.4,3.2],oth4:[200,194]},
+ m:{mk0:'u',mk1:'u',mk2:'u',mk3:'u',mk7:'u'}};
+function autofill(){Object.keys(LIVE.v).forEach(function(k){$('a_'+k).value=LIVE.v[k][0];$('f_'+k).value=LIVE.v[k][1]});Object.keys(LIVE.m).forEach(function(k){$('s_'+k).value=LIVE.m[k]});calc()}
+$('nauto').onclick=autofill;
+var EV=[
+{t:'2026-11-17T13:30:00Z',n:'🇺🇸 Doanh số bán lẻ Mỹ (tháng 10)',d:'Thước đo chi tiêu tiêu dùng. Thực tế > dự báo → USD tăng → Vàng giảm.'},
+{t:'2026-11-18T19:00:00Z',n:'🇺🇸 Biên bản họp FOMC (kỳ tháng 10)',d:'Nghiêng diều hâu → Vàng giảm; nghiêng bồ câu → Vàng tăng.'},
+{t:'2026-11-25T13:30:00Z',n:'🇺🇸 Chỉ số giá PCE (tháng 10)',d:'Thước đo lạm phát Fed ưa thích. Cao hơn dự báo củng cố kỳ vọng tăng lãi suất → Vàng chịu áp lực.'},
+{t:'2026-12-01T15:00:00Z',n:'🇺🇸 ISM sản xuất (tháng 11)',d:'Theo tài liệu: PMI-ISM > dự báo → Vàng giảm; < dự báo → Vàng tăng.'},
+{t:'2026-12-04T13:30:00Z',n:'🇺🇸 NFP – Bảng lương phi nông nghiệp (tháng 11)',d:'Tin mạnh nhất tháng. Xét đủ 3 yếu tố: việc làm, thu nhập TB theo giờ, tỷ lệ thất nghiệp.'},
+{t:'2026-12-09T19:00:00Z',n:'🇺🇸 FOMC: quyết định lãi suất + dự báo lãi suất (dot plot)',d:'Thị trường đang định giá khả năng Fed tăng thêm 25 điểm cơ bản. Lãi suất tăng → Vàng giảm; tuyên bố diều hâu → Vàng giảm.'},
+{t:'2026-12-10T13:30:00Z',n:'🇺🇸 CPI Mỹ (tháng 11)',d:'CPI > dự báo → Vàng giảm; CPI < dự báo → Vàng tăng (theo tài liệu).'},
+{t:'2026-12-23T13:30:00Z',n:'🇺🇸 Chỉ số giá PCE (tháng 11)',d:'Thước đo lạm phát Fed ưa thích.'}];
+var PAST=[
+{t:'2026-11-10T13:30:00Z',n:'CPI Mỹ tháng 10 (m/m)',r:[['CPI chung',0.4,0.3,-1,'%'],['CPI lõi',0.3,0.2,-1,'%']]},
+{t:'2026-11-06T13:30:00Z',n:'NFP tháng 10',r:[['Việc làm phi NN',165,65,-1,'K'],['Thu nhập TB/giờ',0.4,0.3,-1,'%'],['Tỷ lệ thất nghiệp',4.1,4.2,1,'%']]},
+{t:'2026-11-02T15:00:00Z',n:'ISM sản xuất tháng 10',r:[['PMI',55.5,54.6,-1,'']]},
+{t:'2026-10-29T12:30:00Z',n:'GDP quý 3 (ước tính đầu)',r:[['GDP',3.4,3.2,-1,'%']]}];
+function vn(t){return new Date(t).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})}
+function cd(ms){var d=Math.floor(ms/864e5),hh=Math.floor(ms%864e5/36e5),mm=Math.floor(ms%36e5/6e4);return d>0?d+' ngày '+hh+' giờ':hh>0?hh+' giờ '+mm+' phút':mm+' phút'}
+function renderCal(){var now=Date.now(),o='',first=true;
+ EV.forEach(function(e){var ms=Date.parse(e.t)-now;if(ms<-36e5)return;
+  o+='<div class="al" style="align-items:flex-start;gap:10px"><div><b>'+e.n+'</b> <span class="tag">★★★</span><div class="mu">'+e.d+'</div></div><div style="text-align:right;white-space:nowrap"><b>'+vn(e.t)+'</b><div class="mu">'+(ms<0?'vừa công bố':(first?'⏳ ':'')+'còn '+cd(ms))+'</div></div></div>';first=false});
+ o+='<div class="mu" style="margin:12px 0 4px"><b>Đã công bố gần đây</b> (thực tế vs dự báo → tác động lên Vàng theo tài liệu)</div>';
+ PAST.forEach(function(e){o+='<div class="al" style="display:block"><b>'+e.n+'</b> <span class="tag">★★★</span> <span class="mu">'+vn(e.t)+'</span>';
+  e.r.forEach(function(r){var df=r[1]-r[2],v=Math.abs(df)<1e-9?0:(df*r[3]>0?1:-1);
+   o+='<div class="mu">'+r[0]+': <b>'+r[1]+r[4]+'</b> vs dự báo '+r[2]+r[4]+' → '+(v>0?'<span class="up">Vàng ▲</span>':v<0?'<span class="dn">Vàng ▼</span>':'trung lập')+'</div>'});o+='</div>'});
+ $('cal').innerHTML=o}
+renderCal();setInterval(renderCal,30000);
+setInterval(function(){if(!$('rem').checked)return;var now=Date.now();EV.forEach(function(e){var ms=Date.parse(e.t)-now;if(ms>0&&ms<=6e5&&!e.f){e.f=1;startAlarm(30,'Sắp ra tin ★★★ (≤10 phút): '+e.n)}})},15000);
+autofill();
+
+/* ===== Giá vàng thật: thử lần lượt nhiều nguồn, tự chuyển nguồn khi lỗi ===== */
+var PROV=[
+ {s:'gold-api.com',u:'https://api.gold-api.com/price/XAU',f:function(j){return parseFloat(j.price)}},
+ {s:'PAXG · Binance',u:'https://data-api.binance.vision/api/v3/ticker/price?symbol=PAXGUSDT',f:function(j){return parseFloat(j.price)}},
+ {s:'PAXG · Binance',u:'https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT',f:function(j){return parseFloat(j.price)}},
+ {s:'PAXG · CoinGecko',u:'https://api.coingecko.com/api/v3/simple/price?ids=pax-gold&vs_currencies=usd',f:function(j){return parseFloat(j['pax-gold'].usd)}}];
+function setSt(){var x=$('st');x.textContent=live.on?'● Live · '+PROV[live.i].s:'● Mô phỏng';x.className='tag '+(live.on?'up':'');x.title=live.on&&/PAXG/.test(PROV[live.i].s)?'PAXG là token bám giá vàng, xấp xỉ giá spot XAU/USD':''}
+function okP(p,i){if(!live.on){live.on=true;S.base=price=open24=hi=lo=p;candles=[];if(S.tf<60){S.tf=60;document.querySelectorAll('[data-tf]').forEach(function(x){x.classList.toggle('on',x.getAttribute('data-tf')==='60')})}}
+ live.i=i;live.p=p;live.fail=0;live.busy=false;setSt()}
+function tryP(i,left){if(left<=0){live.busy=false;if(live.on&&++live.fail>=3){live.on=false;setSt()}return}
+ var q=PROV[i%PROV.length],ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){ctl&&ctl.abort()},6000);
+ fetch(q.u,{cache:'no-store',signal:ctl?ctl.signal:undefined}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){clearTimeout(tm);var p=q.f(j);if(!(p>100&&p<100000))throw 0;okP(p,i%PROV.length)}).catch(function(){clearTimeout(tm);tryP(i+1,left-1)})}
+function pull(){if(live.busy)return;live.busy=true;tryP(live.i,PROV.length)}
+pull();setInterval(pull,8000);
+seed();renderAl();ui();draw();setInterval(tick,1000);
+})();
+</script>
+</body>
+</html>
